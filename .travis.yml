@@ -1,0 +1,34 @@
+language: c
+dist: trusty
+sudo: false
+services:
+  - postgresql
+addons:
+  postgresql: 9.5
+  apt:
+    sources:
+      - precise-pgdg-9.5
+    packages:
+      - libpq-dev
+env:
+  global:
+    - EMACSCONFFLAGS="--with-x-toolkit=no --without-x --without-all --with-xml2 --with-modules"
+  matrix:
+    - EMACS_VERSION=25.3
+    - EMACS_VERSION=26.2
+    - EMACS_VERSION=snapshot
+matrix:
+  allow_failures:
+    - env: EMACS_VERSION=snapshot
+before_install:
+  - export PATH="$HOME/bin:$PATH"
+  - curl -fsSOL https://github.com/flycheck/emacs-travis/raw/master/emacs-travis.mk
+  - make -f emacs-travis.mk install_emacs
+  - make -f emacs-travis.mk install_cask
+  - curl -OL https://github.com/emacs-mirror/emacs/raw/emacs-25.1/src/emacs-module.h
+install:
+  - make
+before_script:
+  - psql -c 'create database travis_ci_test;' -U postgres
+script:
+  - make PG_CONNINFO="user=postgres dbname=travis_ci_test" check
